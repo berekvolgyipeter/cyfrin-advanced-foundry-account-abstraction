@@ -1,5 +1,7 @@
 # cyfrin-advanced-foundry-account-abstraction
 
+This project is a section of the [Cyfrin Foundry Solidity Course](https://github.com/Cyfrin/foundry-full-course-cu?tab=readme-ov-file#advanced-foundry-section-6-foundry-account-abstraction).
+
 - [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337)
 - [EntryPoint contract](https://etherscan.deth.net/address/0x0000000071727de22e5e9d8baf0edac6f37da032)
 
