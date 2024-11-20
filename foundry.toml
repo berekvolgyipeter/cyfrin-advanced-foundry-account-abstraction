@@ -3,10 +3,14 @@ solc = "0.8.27"
 src = "src"
 out = "out"
 libs = ["lib"]
-remappings = ["forge-std/=dependencies/forge-std-1.9.4/src/"]
+remappings = [
+    "forge-std/=dependencies/forge-std-1.9.4/src/",
+    "account-abstraction/=dependencies/eth-infinitism-account-abstraction-0.7/contracts/",
+]
 
 [dependencies]
 forge-std = { version = "1.9.4" }
+eth-infinitism-account-abstraction = { version = "0.7" }
 
 [soldeer]
 remappings_generate = false
