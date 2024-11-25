@@ -4,12 +4,26 @@ pragma solidity ^0.8.27;
 import { IAccount } from "account-abstraction/interfaces/IAccount.sol";
 import { PackedUserOperation } from "account-abstraction/interfaces/PackedUserOperation.sol";
 import { SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS } from "account-abstraction/core/Helpers.sol";
+import { IEntryPoint } from "account-abstraction/interfaces/IEntryPoint.sol";
 import { Ownable } from "openzeppelin/access/Ownable.sol";
 import { MessageHashUtils } from "openzeppelin/utils/cryptography/MessageHashUtils.sol";
 import { ECDSA } from "openzeppelin/utils/cryptography/ECDSA.sol";
 
 contract MinimalAccount is IAccount, Ownable {
-    constructor(address entryPoint) Ownable(msg.sender) { }
+    error MinimalAccount__NotFromEntryPoint();
+
+    IEntryPoint private immutable i_entryPoint;
+
+    modifier requireFromEntryPoint() {
+        if (msg.sender != address(i_entryPoint)) {
+            revert MinimalAccount__NotFromEntryPoint();
+        }
+        _;
+    }
+
+    constructor(address entryPoint) Ownable(msg.sender) {
+        i_entryPoint = IEntryPoint(entryPoint);
+    }
 
     /**
      * 1. The purpose of this function is to validate user operations by ensuring that the signature is valid. It also
@@ -31,6 +45,7 @@ contract MinimalAccount is IAccount, Ownable {
         uint256 missingAccountFunds
     )
         external
+        requireFromEntryPoint
         returns (uint256 validationData)
     {
         validationData = _validateSignature(userOp, userOpHash);
@@ -61,5 +76,9 @@ contract MinimalAccount is IAccount, Ownable {
             (bool success,) = payable(msg.sender).call{ value: missingAccountFunds, gas: type(uint256).max }("");
             (success);
         }
+    }
+
+    function getEntryPoint() external view returns (address) {
+        return address(i_entryPoint);
     }
 }
