@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
-import {Script, console2} from "forge-std/Script.sol";
+import {Script} from "forge-std/Script.sol";
 import {EntryPoint} from "account-abstraction/core/EntryPoint.sol";
 
 contract HelperConfig is Script {
@@ -92,11 +92,9 @@ contract HelperConfig is Script {
         }
 
         // deploy mocks
-        console2.log("Deploying mocks...");
         vm.startBroadcast(ANVIL_DEFAULT_ACCOUNT);
         EntryPoint entryPoint = new EntryPoint();
         vm.stopBroadcast();
-        console2.log("Mocks deployed!");
 
         localNetworkConfig = NetworkConfig({entryPoint: address(entryPoint), account: ANVIL_DEFAULT_ACCOUNT});
         return localNetworkConfig;
