@@ -5,9 +5,9 @@ import {IAccount} from "account-abstraction/interfaces/IAccount.sol";
 import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
 import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "account-abstraction/core/Helpers.sol";
 import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
-import {Ownable} from "openzeppelin/access/Ownable.sol";
-import {MessageHashUtils} from "openzeppelin/utils/cryptography/MessageHashUtils.sol";
-import {ECDSA} from "openzeppelin/utils/cryptography/ECDSA.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract MinimalAccount is IAccount, Ownable {
     /*//////////////////////////////////////////////////////////////
