@@ -4,34 +4,34 @@ pragma solidity ^0.8.27;
 import {Script} from "forge-std/Script.sol";
 import {EntryPoint} from "account-abstraction/core/EntryPoint.sol";
 
-contract HelperConfig is Script {
+struct NetworkConfig {
+    address entryPoint;
+    address account;
+}
+
+contract Constants {
+    uint256 constant ETH_MAINNET_CHAIN_ID = 1;
+    uint256 constant ETH_SEPOLIA_CHAIN_ID = 11_155_111;
+    uint256 constant ZKSYNC_MAINNET_CHAIN_ID = 324;
+    uint256 constant ZKSYNC_SEPOLIA_CHAIN_ID = 300;
+    uint256 constant ANVIL_CHAIN_ID = 31_337;
+    // Update the BURNER_WALLET to your burner wallet!
+    address constant BURNER_WALLET = 0xf192366DfC5B405C14791ed0b228295B7baC4810;
+
+    // address constant FOUNDRY_DEFAULT_WALLET = 0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38;
+    address constant ANVIL_DEFAULT_ACCOUNT = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    uint256 constant ANVIL_DEFAULT_KEY = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+}
+
+contract HelperConfig is Script, Constants {
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
     error HelperConfig__InvalidChainId();
 
     /*//////////////////////////////////////////////////////////////
-                                 TYPES
-    //////////////////////////////////////////////////////////////*/
-    struct NetworkConfig {
-        address entryPoint;
-        address account;
-    }
-
-    /*//////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
-    uint256 constant ETH_MAINNET_CHAIN_ID = 1;
-    uint256 constant ETH_SEPOLIA_CHAIN_ID = 11_155_111;
-    uint256 constant ZKSYNC_MAINNET_CHAIN_ID = 324;
-    uint256 constant ZKSYNC_SEPOLIA_CHAIN_ID = 300;
-    uint256 constant LOCAL_CHAIN_ID = 31_337;
-    // Update the BURNER_WALLET to your burner wallet!
-    address constant BURNER_WALLET = 0xf192366DfC5B405C14791ed0b228295B7baC4810;
-
-    // address constant FOUNDRY_DEFAULT_WALLET = 0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38;
-    address constant ANVIL_DEFAULT_ACCOUNT = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
-
     NetworkConfig public localNetworkConfig;
     mapping(uint256 chainId => NetworkConfig) public networkConfigs;
 
@@ -50,7 +50,7 @@ contract HelperConfig is Script {
     }
 
     function getConfigByChainId(uint256 chainId) public returns (NetworkConfig memory) {
-        if (chainId == LOCAL_CHAIN_ID) {
+        if (chainId == ANVIL_CHAIN_ID) {
             return getOrCreateAnvilEthConfig();
         } else if (networkConfigs[chainId].account != address(0)) {
             return networkConfigs[chainId];

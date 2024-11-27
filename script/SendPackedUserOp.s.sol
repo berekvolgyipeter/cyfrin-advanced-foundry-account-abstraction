@@ -7,16 +7,16 @@ import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {HelperConfig} from "script/HelperConfig.s.sol";
+import {NetworkConfig, Constants, HelperConfig} from "script/HelperConfig.s.sol";
 
-contract SendPackedUserOp is Script {
+contract SendPackedUserOp is Script, Constants {
     using MessageHashUtils for bytes32;
 
     function run() public {}
 
     function generateSignedUserOperation(
         bytes memory callData,
-        HelperConfig.NetworkConfig memory config,
+        NetworkConfig memory config,
         address minimalAccount
     )
         public
@@ -35,8 +35,6 @@ contract SendPackedUserOp is Script {
         uint8 v;
         bytes32 r;
         bytes32 s;
-        uint256 ANVIL_CHAIN_ID = 31_337;
-        uint256 ANVIL_DEFAULT_KEY = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
         if (block.chainid == ANVIL_CHAIN_ID) {
             (v, r, s) = vm.sign(ANVIL_DEFAULT_KEY, digest);
         } else {
