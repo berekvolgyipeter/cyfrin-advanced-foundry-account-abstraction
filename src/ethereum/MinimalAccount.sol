@@ -10,6 +10,8 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract MinimalAccount is IAccount, Ownable {
+    using MessageHashUtils for bytes32;
+
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -100,7 +102,7 @@ contract MinimalAccount is IAccount, Ownable {
         returns (uint256 validationData)
     {
         // convert the `userOpHash` back into a normal hash
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(userOpHash);
+        bytes32 ethSignedMessageHash = userOpHash.toEthSignedMessageHash();
         address signer = ECDSA.recover(ethSignedMessageHash, userOp.signature);
         if (signer != owner()) {
             return SIG_VALIDATION_FAILED;

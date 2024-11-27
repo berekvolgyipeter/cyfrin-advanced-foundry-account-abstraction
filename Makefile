@@ -34,7 +34,7 @@ test-fork-sepolia :; $(TEST) --fork-url $(RPC_URL_SEPOLIA)
 test-fork-mainnet :; $(TEST) --fork-url $(RPC_URL_MAINNET)
 
 # ---------- coverage ----------
-coverage :; forge coverage --skip InvariantsTest.t.sol --no-match-coverage test
+coverage :; forge coverage --no-match-test invariant --no-match-coverage "^(test|script)/"
 coverage-lcov :; make coverage EXTRA_FLAGS="--report lcov"
 coverage-txt :; make coverage EXTRA_FLAGS="--report debug > coverage.txt"
 
