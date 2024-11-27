@@ -31,6 +31,19 @@ contract MinimalAccountTest is Test {
         sendPackedUserOp = new SendPackedUserOp();
     }
 
+    function signUserOp() public returns (PackedUserOperation memory packedUserOp, bytes32 userOperationHash) {
+        assertEq(usdc.balanceOf(address(minimalAccount)), 0);
+        address dest = address(usdc);
+        uint256 value = 0;
+        bytes memory functionData = abi.encodeWithSelector(ERC20Mock.mint.selector, address(minimalAccount), AMOUNT);
+        bytes memory executeCallData =
+            abi.encodeWithSelector(MinimalAccount.execute.selector, dest, value, functionData);
+        packedUserOp = sendPackedUserOp.generateSignedUserOperation(
+            executeCallData, helperConfig.getConfig(), address(minimalAccount)
+        );
+        userOperationHash = IEntryPoint(helperConfig.getConfig().entryPoint).getUserOpHash(packedUserOp);
+    }
+
     function testOwnerCanExecuteCommands() public {
         // Arrange
         assertEq(usdc.balanceOf(address(minimalAccount)), 0);
@@ -58,22 +71,17 @@ contract MinimalAccountTest is Test {
     }
 
     function testRecoverSignedOp() public {
-        // Arrange
-        assertEq(usdc.balanceOf(address(minimalAccount)), 0);
-        address dest = address(usdc);
-        uint256 value = 0;
-        bytes memory functionData = abi.encodeWithSelector(ERC20Mock.mint.selector, address(minimalAccount), AMOUNT);
-        bytes memory executeCallData =
-            abi.encodeWithSelector(MinimalAccount.execute.selector, dest, value, functionData);
-        PackedUserOperation memory packedUserOp = sendPackedUserOp.generateSignedUserOperation(
-            executeCallData, helperConfig.getConfig(), address(minimalAccount)
-        );
-        bytes32 userOperationHash = IEntryPoint(helperConfig.getConfig().entryPoint).getUserOpHash(packedUserOp);
-
-        // Act
+        (PackedUserOperation memory packedUserOp, bytes32 userOperationHash) = signUserOp();
         address actualSigner = ECDSA.recover(userOperationHash.toEthSignedMessageHash(), packedUserOp.signature);
-
-        // Assert
         assertEq(actualSigner, minimalAccount.owner());
+    }
+
+    function testValidationOfUserOps() public {
+        (PackedUserOperation memory packedUserOp, bytes32 userOperationHash) = signUserOp();
+        uint256 missingAccountFunds = 1e18;
+
+        vm.prank(helperConfig.getConfig().entryPoint);
+        uint256 validationData = minimalAccount.validateUserOp(packedUserOp, userOperationHash, missingAccountFunds);
+        assertEq(validationData, 0);
     }
 }
