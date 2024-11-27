@@ -5,6 +5,7 @@ out = "out"
 libs = ["lib"]
 remappings = [
     "forge-std/=dependencies/forge-std-1.9.4/src/",
+    "foundry-devops/=dependencies/foundry-devops-0.2.2/src/",
     "account-abstraction/=dependencies/eth-infinitism-account-abstraction-0.7/contracts/",
     "@openzeppelin/contracts/=dependencies/@openzeppelin-contracts-5.1.0/",
 ]
@@ -15,6 +16,7 @@ fs_permissions = [
 
 [dependencies]
 forge-std = { version = "1.9.4" }
+foundry-devops = { version = "0.2.2" }
 eth-infinitism-account-abstraction = { version = "0.7" }
 "@openzeppelin-contracts" = { version = "5.1.0" }
 
