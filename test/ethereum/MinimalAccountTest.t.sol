@@ -29,10 +29,11 @@ contract MinimalAccountTest is Test {
         (helperConfig, minimalAccount) = deployer.deployMinimalAccount();
         usdc = new ERC20Mock();
         sendPackedUserOp = new SendPackedUserOp();
+
+        assertEq(usdc.balanceOf(address(minimalAccount)), 0);
     }
 
     function signUserOp() public returns (PackedUserOperation memory packedUserOp, bytes32 userOperationHash) {
-        assertEq(usdc.balanceOf(address(minimalAccount)), 0);
         address dest = address(usdc);
         uint256 value = 0;
         bytes memory functionData = abi.encodeWithSelector(ERC20Mock.mint.selector, address(minimalAccount), AMOUNT);
@@ -46,7 +47,6 @@ contract MinimalAccountTest is Test {
 
     function testOwnerCanExecuteCommands() public {
         // Arrange
-        assertEq(usdc.balanceOf(address(minimalAccount)), 0);
         address dest = address(usdc);
         uint256 value = 0;
         bytes memory functionData = abi.encodeWithSelector(ERC20Mock.mint.selector, address(minimalAccount), AMOUNT);
@@ -60,7 +60,6 @@ contract MinimalAccountTest is Test {
 
     function testNonOwnerCannotExecuteCommands() public {
         // Arrange
-        assertEq(usdc.balanceOf(address(minimalAccount)), 0);
         address dest = address(usdc);
         uint256 value = 0;
         bytes memory functionData = abi.encodeWithSelector(ERC20Mock.mint.selector, address(minimalAccount), AMOUNT);
@@ -83,5 +82,21 @@ contract MinimalAccountTest is Test {
         vm.prank(helperConfig.getConfig().entryPoint);
         uint256 validationData = minimalAccount.validateUserOp(packedUserOp, userOperationHash, missingAccountFunds);
         assertEq(validationData, 0);
+    }
+
+    function testEntryPointCanExecuteCommands() public {
+        // Arrange
+        (PackedUserOperation memory packedUserOp,) = signUserOp();
+        vm.deal(address(minimalAccount), 1e18);
+        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
+        ops[0] = packedUserOp;
+
+        // Act
+        // As long as we signed the operation, it doesn't matter who sends it
+        vm.prank(randomuser);
+        IEntryPoint(helperConfig.getConfig().entryPoint).handleOps(ops, payable(randomuser));
+
+        // Assert
+        assertEq(usdc.balanceOf(address(minimalAccount)), AMOUNT);
     }
 }
