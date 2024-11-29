@@ -85,6 +85,7 @@ contract MinimalAccount is IAccount, Ownable {
     {
         validationData = _validateSignature(userOp, userOpHash);
         /// @dev _validateNonce() will be handled by the `EntryPoint` contract
+        // pay missing account funds (cost of performing user operation) to the entrypoint
         _payPrefund(missingAccountFunds);
     }
 

@@ -24,8 +24,7 @@ contract SendPackedUserOp is Script, Constants {
         returns (PackedUserOperation memory)
     {
         // 1. Generate the unsigned data
-        uint256 nonce = vm.getNonce(minimalAccount) - 1;
-        PackedUserOperation memory userOp = _generateUnsignedUserOperation(callData, minimalAccount, nonce);
+        PackedUserOperation memory userOp = _generateUnsignedUserOperation(callData, minimalAccount);
 
         // 2. Get the userOp Hash
         bytes32 userOpHash = IEntryPoint(config.entryPoint).getUserOpHash(userOp);
@@ -46,13 +45,13 @@ contract SendPackedUserOp is Script, Constants {
 
     function _generateUnsignedUserOperation(
         bytes memory callData,
-        address sender,
-        uint256 nonce
+        address sender
     )
         internal
-        pure
+        view
         returns (PackedUserOperation memory)
     {
+        uint256 nonce = vm.getNonce(sender) - 1;
         uint128 verificationGasLimit = 16_777_216;
         uint128 callGasLimit = verificationGasLimit;
         uint128 maxPriorityFeePerGas = 256;

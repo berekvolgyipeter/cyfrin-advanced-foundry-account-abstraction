@@ -8,95 +8,112 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 
 import {MinimalAccount} from "src/ethereum/MinimalAccount.sol";
-import {HelperConfig} from "script/HelperConfig.s.sol";
+import {HelperConfig, NetworkConfig} from "script/HelperConfig.s.sol";
 import {DeployMinimalAccount} from "script/DeployMinimalAccount.s.sol";
 import {SendPackedUserOp, PackedUserOperation, IEntryPoint} from "script/SendPackedUserOp.s.sol";
 
 contract MinimalAccountTest is Test {
     using MessageHashUtils for bytes32;
 
-    HelperConfig helperConfig;
+    NetworkConfig cfg;
     MinimalAccount minimalAccount;
     ERC20Mock usdc;
     SendPackedUserOp sendPackedUserOp;
 
     address randomuser = makeAddr("randomUser");
 
-    uint256 constant AMOUNT = 1e18;
+    uint256 constant USDC_AMOUNT = 10 ether;
+    uint256 constant MISSING_ACCOUNT_FUNDS = 1 ether;
 
     function setUp() public {
+        HelperConfig helperConfig;
         DeployMinimalAccount deployer = new DeployMinimalAccount();
         (helperConfig, minimalAccount) = deployer.deployMinimalAccount();
+        cfg = helperConfig.getConfig();
         usdc = new ERC20Mock();
         sendPackedUserOp = new SendPackedUserOp();
 
+        vm.deal(address(minimalAccount), MISSING_ACCOUNT_FUNDS);
         assertEq(usdc.balanceOf(address(minimalAccount)), 0);
     }
 
-    function signUserOp() public returns (PackedUserOperation memory packedUserOp, bytes32 userOperationHash) {
+    function signUserOp() public view returns (PackedUserOperation memory packedUserOp, bytes32 userOperationHash) {
         address dest = address(usdc);
         uint256 value = 0;
-        bytes memory functionData = abi.encodeWithSelector(ERC20Mock.mint.selector, address(minimalAccount), AMOUNT);
+        bytes memory functionData =
+            abi.encodeWithSelector(ERC20Mock.mint.selector, address(minimalAccount), USDC_AMOUNT);
         bytes memory executeCallData =
             abi.encodeWithSelector(MinimalAccount.execute.selector, dest, value, functionData);
-        packedUserOp = sendPackedUserOp.generateSignedUserOperation(
-            executeCallData, helperConfig.getConfig(), address(minimalAccount)
-        );
-        userOperationHash = IEntryPoint(helperConfig.getConfig().entryPoint).getUserOpHash(packedUserOp);
+        packedUserOp = sendPackedUserOp.generateSignedUserOperation(executeCallData, cfg, address(minimalAccount));
+        userOperationHash = IEntryPoint(cfg.entryPoint).getUserOpHash(packedUserOp);
     }
 
     function testOwnerCanExecuteCommands() public {
         // Arrange
         address dest = address(usdc);
         uint256 value = 0;
-        bytes memory functionData = abi.encodeWithSelector(ERC20Mock.mint.selector, address(minimalAccount), AMOUNT);
+        bytes memory functionData =
+            abi.encodeWithSelector(ERC20Mock.mint.selector, address(minimalAccount), USDC_AMOUNT);
         // Act
         vm.prank(minimalAccount.owner());
         minimalAccount.execute(dest, value, functionData);
 
         // Assert
-        assertEq(usdc.balanceOf(address(minimalAccount)), AMOUNT);
+        assertEq(usdc.balanceOf(address(minimalAccount)), USDC_AMOUNT);
     }
 
     function testNonOwnerCannotExecuteCommands() public {
         // Arrange
         address dest = address(usdc);
         uint256 value = 0;
-        bytes memory functionData = abi.encodeWithSelector(ERC20Mock.mint.selector, address(minimalAccount), AMOUNT);
+        bytes memory functionData =
+            abi.encodeWithSelector(ERC20Mock.mint.selector, address(minimalAccount), USDC_AMOUNT);
         // Act
         vm.prank(randomuser);
         vm.expectRevert(MinimalAccount.MinimalAccount__NotFromEntryPointOrOwner.selector);
         minimalAccount.execute(dest, value, functionData);
     }
 
-    function testRecoverSignedOp() public {
+    function testRecoverSignedOp() public view {
         (PackedUserOperation memory packedUserOp, bytes32 userOperationHash) = signUserOp();
         address actualSigner = ECDSA.recover(userOperationHash.toEthSignedMessageHash(), packedUserOp.signature);
+
         assertEq(actualSigner, minimalAccount.owner());
     }
 
     function testValidationOfUserOps() public {
         (PackedUserOperation memory packedUserOp, bytes32 userOperationHash) = signUserOp();
-        uint256 missingAccountFunds = 1e18;
 
-        vm.prank(helperConfig.getConfig().entryPoint);
-        uint256 validationData = minimalAccount.validateUserOp(packedUserOp, userOperationHash, missingAccountFunds);
+        vm.prank(cfg.entryPoint);
+        uint256 validationData = minimalAccount.validateUserOp(packedUserOp, userOperationHash, MISSING_ACCOUNT_FUNDS);
+
         assertEq(validationData, 0);
+        assertEq(cfg.entryPoint.balance, MISSING_ACCOUNT_FUNDS);
+    }
+
+    function testValidationOfUserOpsInvalidSignature() public {
+        (PackedUserOperation memory packedUserOp, bytes32 userOperationHash) = signUserOp();
+        packedUserOp.signature[0] = ~packedUserOp.signature[0];
+
+        vm.prank(cfg.entryPoint);
+        vm.expectRevert(ECDSA.ECDSAInvalidSignature.selector);
+        minimalAccount.validateUserOp(packedUserOp, userOperationHash, MISSING_ACCOUNT_FUNDS);
+
+        assertEq(cfg.entryPoint.balance, 0);
     }
 
     function testEntryPointCanExecuteCommands() public {
         // Arrange
         (PackedUserOperation memory packedUserOp,) = signUserOp();
-        vm.deal(address(minimalAccount), 1e18);
         PackedUserOperation[] memory ops = new PackedUserOperation[](1);
         ops[0] = packedUserOp;
 
         // Act
-        // As long as we signed the operation, it doesn't matter who sends it
+        // As long as we signed the operation, it doesn't matter who sends it to the entrypoint
         vm.prank(randomuser);
-        IEntryPoint(helperConfig.getConfig().entryPoint).handleOps(ops, payable(randomuser));
+        IEntryPoint(cfg.entryPoint).handleOps(ops, payable(randomuser));
 
         // Assert
-        assertEq(usdc.balanceOf(address(minimalAccount)), AMOUNT);
+        assertEq(usdc.balanceOf(address(minimalAccount)), USDC_AMOUNT);
     }
 }
