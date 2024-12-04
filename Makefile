@@ -51,11 +51,18 @@ check-etherscan-api:
 	echo "Sepolia:" $$response_sepolia;
 
 # ---------- deploy & interact ----------
-NETWORK_ARGS_ANVIL := --rpc-url $(RPC_URL_ANVIL) --private-key $(PRIVATE_KEY_ANVIL_0) --broadcast
-NETWORK_ARGS_SEPOLIA := --rpc-url $(RPC_URL_SEPOLIA) --account $(ACCOUNT_DEV) --sender $(ADDRESS_DEV) --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) -vvvv
-DEPLOY := forge script script/DeployMinimalAccount.s.sol:DeployMinimalAccount
+ACCOUNT_ARGS := --account $(ACCOUNT_DEV) --sender $(ADDRESS_DEV)
+VERIFY_ARGS := --verify --etherscan-api-key $(ETHERSCAN_API_KEY)
+ARGS_ANVIL := --rpc-url $(RPC_URL_ANVIL) --private-key $(PRIVATE_KEY_ANVIL_0)
+ARGS_SEPOLIA := --rpc-url $(RPC_URL_SEPOLIA) $(ACCOUNT_ARGS)
+ARGS_ARBITRUM := --rpc-url $(RPC_URL_ARBITRUM) $(ACCOUNT_ARGS)
+
+DEPLOY := forge script script/DeployMinimalAccount.s.sol:DeployMinimalAccount --broadcast -vvvv
+SEND_PACKED_USER_OP := forge script script/SendPackedUserOp.s.sol --broadcast -vvvv
 
 anvil :; anvil -m 'test test test test test test test test test test test junk' --steps-tracing --block-time 1
 
-deploy :; $(DEPLOY) $(NETWORK_ARGS_ANVIL)
-deploy-sepolia :; $(DEPLOY) $(NETWORK_ARGS_SEPOLIA)
+deploy :; $(DEPLOY) $(ARGS_ANVIL)
+deploy-sepolia :; $(DEPLOY) $(ARGS_SEPOLIA) $(VERIFY_ARGS)
+deploy-arbitrum :; $(DEPLOY) $(ARGS_ARBITRUM) $(VERIFY_ARGS)
+sendPackedUserOp-arbitrum :; $(SEND_PACKED_USER_OP) $(ARGS_ARBITRUM)

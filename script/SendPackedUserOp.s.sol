@@ -2,17 +2,41 @@
 pragma solidity ^0.8.27;
 
 import {Script} from "forge-std/Script.sol";
+import {DevOpsTools} from "foundry-devops/DevOpsTools.sol";
 import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
 import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {NetworkConfig, Constants, HelperConfig} from "script/HelperConfig.s.sol";
+import {MinimalAccount} from "src/ethereum/MinimalAccount.sol";
 
 contract SendPackedUserOp is Script, Constants {
     using MessageHashUtils for bytes32;
 
-    function run() public {}
+    // Make sure you trust this user - don't run this on Mainnet!
+    address constant RANDOM_APPROVER = address(0);
+
+    function run() public {
+        // Setup
+        HelperConfig helperConfig = new HelperConfig();
+        NetworkConfig memory cfg = helperConfig.getConfig();
+        address dest = cfg.usdc;
+        uint256 value = 0;
+        address minimalAccountAddress = DevOpsTools.get_most_recent_deployment("MinimalAccount", block.chainid);
+
+        bytes memory functionData = abi.encodeWithSelector(IERC20.approve.selector, RANDOM_APPROVER, 1 ether);
+        bytes memory executeCalldata =
+            abi.encodeWithSelector(MinimalAccount.execute.selector, dest, value, functionData);
+        PackedUserOperation memory userOp = generateSignedUserOperation(executeCalldata, cfg, minimalAccountAddress);
+        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
+        ops[0] = userOp;
+
+        // Send transaction
+        vm.startBroadcast();
+        IEntryPoint(cfg.entryPoint).handleOps(ops, payable(cfg.account));
+        vm.stopBroadcast();
+    }
 
     function generateSignedUserOperation(
         bytes memory callData,

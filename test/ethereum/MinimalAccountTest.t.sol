@@ -3,6 +3,7 @@ pragma solidity 0.8.27;
 
 import {Test} from "forge-std/Test.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
@@ -17,7 +18,6 @@ contract MinimalAccountTest is Test {
 
     NetworkConfig cfg;
     MinimalAccount minimalAccount;
-    ERC20Mock usdc;
     SendPackedUserOp sendPackedUserOp;
 
     address randomuser = makeAddr("randomUser");
@@ -30,15 +30,13 @@ contract MinimalAccountTest is Test {
         DeployMinimalAccount deployer = new DeployMinimalAccount();
         (helperConfig, minimalAccount) = deployer.deployMinimalAccount();
         cfg = helperConfig.getConfig();
-        usdc = new ERC20Mock();
         sendPackedUserOp = new SendPackedUserOp();
 
         vm.deal(address(minimalAccount), MISSING_ACCOUNT_FUNDS);
-        assertEq(usdc.balanceOf(address(minimalAccount)), 0);
     }
 
     function signUserOp() public view returns (PackedUserOperation memory packedUserOp, bytes32 userOperationHash) {
-        address dest = address(usdc);
+        address dest = cfg.usdc;
         uint256 value = 0;
         bytes memory functionData =
             abi.encodeWithSelector(ERC20Mock.mint.selector, address(minimalAccount), USDC_AMOUNT);
@@ -50,7 +48,7 @@ contract MinimalAccountTest is Test {
 
     function testOwnerCanExecuteCommands() public {
         // Arrange
-        address dest = address(usdc);
+        address dest = cfg.usdc;
         uint256 value = 0;
         bytes memory functionData =
             abi.encodeWithSelector(ERC20Mock.mint.selector, address(minimalAccount), USDC_AMOUNT);
@@ -59,12 +57,12 @@ contract MinimalAccountTest is Test {
         minimalAccount.execute(dest, value, functionData);
 
         // Assert
-        assertEq(usdc.balanceOf(address(minimalAccount)), USDC_AMOUNT);
+        assertEq(IERC20(cfg.usdc).balanceOf(address(minimalAccount)), USDC_AMOUNT);
     }
 
     function testNonOwnerCannotExecuteCommands() public {
         // Arrange
-        address dest = address(usdc);
+        address dest = cfg.usdc;
         uint256 value = 0;
         bytes memory functionData =
             abi.encodeWithSelector(ERC20Mock.mint.selector, address(minimalAccount), USDC_AMOUNT);
@@ -114,6 +112,6 @@ contract MinimalAccountTest is Test {
         IEntryPoint(cfg.entryPoint).handleOps(ops, payable(randomuser));
 
         // Assert
-        assertEq(usdc.balanceOf(address(minimalAccount)), USDC_AMOUNT);
+        assertEq(IERC20(cfg.usdc).balanceOf(address(minimalAccount)), USDC_AMOUNT);
     }
 }
