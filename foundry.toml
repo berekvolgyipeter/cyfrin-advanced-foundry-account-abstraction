@@ -8,6 +8,7 @@ remappings = [
     "foundry-devops/=dependencies/foundry-devops-0.2.2/src/",
     "account-abstraction/=dependencies/eth-infinitism-account-abstraction-0.7/contracts/",
     "@openzeppelin/contracts/=dependencies/@openzeppelin-contracts-5.1.0/",
+    "cyfrin-foundry-era-contracts/=dependencies/cyfrin-foundry-era-contracts-0.0.3/src/system-contracts/contracts",
 ]
 fs_permissions = [
     { access = "read", path = "./broadcast" },
@@ -19,6 +20,7 @@ forge-std = { version = "1.9.4" }
 foundry-devops = { version = "0.2.2" }
 eth-infinitism-account-abstraction = { version = "0.7" }
 "@openzeppelin-contracts" = { version = "5.1.0" }
+cyfrin-foundry-era-contracts = { version = "0.0.3" }
 
 [soldeer]
 remappings_generate = false
