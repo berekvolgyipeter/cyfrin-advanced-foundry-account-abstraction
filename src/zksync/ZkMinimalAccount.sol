@@ -7,7 +7,13 @@ import {
     Transaction, MemoryTransactionHelper
 } from "cyfrin-foundry-era-contracts/libraries/MemoryTransactionHelper.sol";
 import {SystemContractsCaller} from "cyfrin-foundry-era-contracts/libraries/SystemContractsCaller.sol";
-import {NONCE_HOLDER_SYSTEM_CONTRACT, BOOTLOADER_FORMAL_ADDRESS} from "cyfrin-foundry-era-contracts/Constants.sol";
+import {
+    NONCE_HOLDER_SYSTEM_CONTRACT,
+    BOOTLOADER_FORMAL_ADDRESS,
+    DEPLOYER_SYSTEM_CONTRACT
+} from "cyfrin-foundry-era-contracts/Constants.sol";
+import {Utils} from "cyfrin-foundry-era-contracts/libraries/Utils.sol";
+
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -32,12 +38,21 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract ZkMinimalAccount is IAccount, Ownable {
     using MemoryTransactionHelper for Transaction;
 
-    error ZkMinimalAccount__NotEnoughBalance();
     error ZkMinimalAccount__NotFromBootLoader();
+    error ZkMinimalAccount__NotFromBootLoaderOrOwner();
+    error ZkMinimalAccount__NotEnoughBalance();
+    error ZkMinimalAccount__ExecutionFailed();
 
     modifier requireFromBootLoader() {
         if (msg.sender != BOOTLOADER_FORMAL_ADDRESS) {
             revert ZkMinimalAccount__NotFromBootLoader();
+        }
+        _;
+    }
+
+    modifier requireFromBootLoaderOrOwner() {
+        if (msg.sender != BOOTLOADER_FORMAL_ADDRESS && msg.sender != owner()) {
+            revert ZkMinimalAccount__NotFromBootLoaderOrOwner();
         }
         _;
     }
@@ -53,25 +68,29 @@ contract ZkMinimalAccount is IAccount, Ownable {
      * @notice also check to see if we have enough money in our account
      */
     function validateTransaction(
-        bytes32, /*_txHash*/
-        bytes32, /*_suggestedSignedHash*/
+        bytes32, /* _txHash */
+        bytes32, /* _suggestedSignedHash */
         Transaction memory _transaction
     )
         external
         payable
+        requireFromBootLoader
         returns (bytes4 magic)
     {
         return _validateTransaction(_transaction);
     }
 
     function executeTransaction(
-        bytes32 _txHash,
-        bytes32 _suggestedSignedHash,
+        bytes32, /* _txHash */
+        bytes32, /* _suggestedSignedHash */
         Transaction memory _transaction
     )
         external
         payable
-    {}
+        requireFromBootLoaderOrOwner
+    {
+        _executeTransaction(_transaction);
+    }
 
     function executeTransactionFromOutside(Transaction memory _transaction) external payable {}
 
@@ -100,6 +119,25 @@ contract ZkMinimalAccount is IAccount, Ownable {
         _incrementNonce(_transaction);
         _checkForFeeToPay(_transaction);
         magic = _checkSignature(_transaction);
+    }
+
+    function _executeTransaction(Transaction memory _transaction) internal {
+        address to = address(uint160(_transaction.to));
+        uint128 value = Utils.safeCastToU128(_transaction.value);
+        bytes memory data = _transaction.data;
+
+        if (to == address(DEPLOYER_SYSTEM_CONTRACT)) {
+            uint32 gas = Utils.safeCastToU32(gasleft());
+            SystemContractsCaller.systemCallWithPropagatedRevert(gas, to, value, data);
+        } else {
+            bool success;
+            assembly {
+                success := call(gas(), to, value, add(data, 0x20), mload(data), 0, 0)
+            }
+            if (!success) {
+                revert ZkMinimalAccount__ExecutionFailed();
+            }
+        }
     }
 
     /*//////////////////////////////////////////////////////////////
