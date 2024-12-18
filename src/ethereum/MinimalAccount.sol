@@ -113,6 +113,8 @@ contract MinimalAccount is IAccount, Ownable {
 
     function _payPrefund(uint256 missingAccountFunds) internal {
         if (missingAccountFunds != 0) {
+            // We are sending the transaction fees to the sender (who will also send the transaction)
+            // slither-disable-next-line arbitrary-send-eth
             (bool success,) = payable(msg.sender).call{value: missingAccountFunds, gas: type(uint256).max}("");
             (success);
         }
