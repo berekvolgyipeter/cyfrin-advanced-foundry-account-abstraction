@@ -14,6 +14,12 @@ fs_permissions = [
     { access = "read", path = "./broadcast" },
     { access = "read", path = "./reports" },
 ]
+# Intermediate Representation (IR)
+# It is an additional compilation step that routes the source code through
+# an intermediate abstraction layer before generating the final bytecode.
+# We need this because of 'stact too deep' compiler error.
+# This comes because of the giat Transaction structure and the MemoryTransactionHelper
+via_ir = true
 
 [dependencies]
 forge-std = { version = "1.9.4" }

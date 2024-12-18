@@ -1,0 +1,50 @@
+name: TestZkSync
+
+on:
+  push:
+    branches:
+      - main
+      - release
+      - develop
+  pull_request:
+  workflow_dispatch:
+
+env:
+  FOUNDRY_PROFILE: default
+
+jobs:
+  test-zksync:
+    strategy:
+      fail-fast: true
+
+    name: Foundry project
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Foundry-ZKsync
+        uses: dutterbutter/foundry-zksync-toolchain@v1
+
+      - name: Install dependencies
+        run: |
+          make install
+
+      - name: Show Forge version
+        run: |
+          forge --version
+
+      - name: Run Forge fmt
+        run: |
+          forge fmt --check
+        id: fmt
+
+      - name: Run Forge build
+        run: |
+          make build-zksync
+        id: build
+
+      - name: Run Forge tests
+        run: |
+          make test-zksync
+        id: test

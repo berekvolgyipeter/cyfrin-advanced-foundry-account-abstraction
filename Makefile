@@ -18,29 +18,29 @@ update:; forge soldeer update
 
 # ---------- build ----------
 build :; forge build
+build-zksync :; forge build --zksync --system-mode=true
 clean :; forge clean && rm -rf cache/
 
 # ---------- tests ----------
 TEST := forge test -vvv
-TEST_UNIT := $(TEST) --match-path "test/unit/*.t.sol"
+TEST_ETHEREUM := $(TEST) --match-path "test/ethereum/*.t.sol"
+# system-mode is used to interact with ZkSync system contracts
+TEST_ZKSYNC := $(TEST) --match-path "test/zksync/*.t.sol" --zksync --system-mode=true
 
-test :; $(TEST)
-test-unit :; $(TEST_UNIT)
-test-unit-fork-sepolia :; $(TEST_UNIT) --fork-url $(RPC_URL_SEPOLIA)
-test-unit-fork-mainnet :; $(TEST_UNIT) --fork-url $(RPC_URL_MAINNET)
-test-fuzz :; $(TEST) --match-path "test/fuzz/*.t.sol"
-test-invariant :; $(TEST) --match-path "test/invariant/*.t.sol"
-test-fork-sepolia :; $(TEST) --fork-url $(RPC_URL_SEPOLIA)
-test-fork-mainnet :; $(TEST) --fork-url $(RPC_URL_MAINNET)
+test :; $(TEST_ETHEREUM)
+test-zksync :; $(TEST_ZKSYNC)
+test-fork-sepolia :; $(TEST_ETHEREUM) --fork-url $(RPC_URL_SEPOLIA)
+test-fork-mainnet :; $(TEST_ETHEREUM) --fork-url $(RPC_URL_MAINNET)
 
 # ---------- coverage ----------
-coverage :; forge coverage --no-match-test invariant --no-match-coverage "^(test|script)/"
+coverage :; forge coverage --no-match-test zksync --no-match-coverage "^(test|script|zksync)/"
 coverage-lcov :; make coverage EXTRA_FLAGS="--report lcov"
 coverage-txt :; make coverage EXTRA_FLAGS="--report debug > coverage.txt"
 
 # ---------- static analysis ----------
 format-check :; forge fmt --check
 slither-install :; python3 -m pip install slither-analyzer
+slither-upgrade :; python3 -m pip install --upgrade slither-analyzer
 slither :; slither . --config-file slither.config.json --checklist
 
 # ---------- etherscan ----------
