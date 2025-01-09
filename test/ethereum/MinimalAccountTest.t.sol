@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-
+import {SIG_VALIDATION_SUCCESS} from "account-abstraction/core/Helpers.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 
 import {MinimalAccount} from "src/ethereum/MinimalAccount.sol";
@@ -85,7 +85,7 @@ contract MinimalAccountTest is Test {
         vm.prank(cfg.entryPoint);
         uint256 validationData = minimalAccount.validateUserOp(packedUserOp, userOperationHash, MISSING_ACCOUNT_FUNDS);
 
-        assertEq(validationData, 0);
+        assertEq(validationData, SIG_VALIDATION_SUCCESS);
         assertEq(cfg.entryPoint.balance, MISSING_ACCOUNT_FUNDS);
     }
 
