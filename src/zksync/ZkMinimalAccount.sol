@@ -18,22 +18,7 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * Lifecycle of a type 113 (0x71) transaction
- * msg.sender is the bootloader system contract
- *
- * Phase 1 Validation
- * 1. The user sends the transaction to the "zkSync API client" (sort of a "light node")
- * 2. The zkSync API client checks to see if the nonce is unique by querying the NonceHolder system contract
- * 3. The zkSync API client calls validateTransaction, which MUST update the nonce
- * 4. The zkSync API client checks the nonce is updated
- * 5. The zkSync API client calls payForTransaction, or prepareForPaymaster & validateAndPayForPaymasterTransaction
- * 6. The zkSync API client verifies that the bootloader gets paid
- *
- * Phase 2 Execution
- * 7. The zkSync API client passes the validated transaction to the main node / sequencer (as of today, they are the
- * same)
- * 8. The main node calls executeTransaction
- * 9. If a paymaster was used, the postTransaction is called
+ * @notice See lifecycle of a type 113 (0x71) transaction in README / Implementation details / ZkSync
  */
 contract ZkMinimalAccount is IAccount, Ownable {
     using MemoryTransactionHelper for Transaction;
@@ -147,6 +132,7 @@ contract ZkMinimalAccount is IAccount, Ownable {
         } else {
             bool success;
             assembly {
+                // call to an external contract, transferring `value` amount of Ether and passing `data` as input
                 success := call(gas(), to, value, add(data, 0x20), mload(data), 0, 0)
             }
             if (!success) {
