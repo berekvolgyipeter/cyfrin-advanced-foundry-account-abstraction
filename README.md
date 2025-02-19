@@ -45,7 +45,7 @@ Right now, every single transaction in web3 stems from a single private key.
 
 ### Ethereum
 
-`MinimalAccount` is respinsible for the custom authorization and transaction cost payment logics of its related EOA.
+`MinimalAccount` is responsible for the custom authorization and transaction cost payment logics of its related EOA.
 In our case the owner of `MinimalAccount` has to sign the transaction and `MinimalAccount` pays for its cost.
 
 #### Flow
@@ -68,7 +68,7 @@ It doesn't matter who calls this function as long as the signature is valid. The
    1. Calls `MinimalAccount.validateUserOp`, which:
       1. Validates the signature *(can be any custom validtaion - in our case the signer has to be the owner of `MinimalAccount`)*
       2. Pays cost of performing user operation to the `EntryPoint` *(Note: a paymaster can be set up)*
-   2. If the validation is successful, calls `MinimalAccount.execute` which executes the transaction.
+   2. If the validation is successful, executes the transaction calldata which is `MinimalAccount.execute`.
 
 ### ZkSync
 
@@ -94,7 +94,7 @@ msg.sender is the bootloader system contract
 1. The zkSync API client passes the validated transaction to the main node / sequencer (as of today, they are the same)
 2. The main node calls executeTransaction
    1. If we make a transaction to a system contract, we have to handle it differently to be compatible with the ZkSync rollup.
-   Our implementation only handles the deployer system contract call, but we culd write the handlig to all the system contracts.
+   Our implementation only handles the deployer system contract call, but we could write the handling to all the system contracts.
 3. If a paymaster was used, the postTransaction is called
 
 ## Pipelines
